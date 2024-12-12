@@ -102,7 +102,7 @@ void ULeaderboardController::RefreshAccessToken_Implementation()
 	FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
 	Request->SetVerb("POST");
 	//Bind Response Received Callback
-	Request->OnProcessRequestComplete().BindLambda([&, TokenResponse](FHttpRequestPtr, FHttpResponsePtr Response, bool bWasSuccessful)
+	Request->OnProcessRequestComplete().BindLambda([&](FHttpRequestPtr, FHttpResponsePtr Response, bool bWasSuccessful)
 	{
 		if (bWasSuccessful && Response.IsValid() && Response->GetResponseCode() == 200)
 		{
@@ -124,7 +124,7 @@ void ULeaderboardController::RefreshAccessToken_Implementation()
 	Request->ProcessRequest();
 }
 
-void ULeaderboardController::GetTopScores()
+/* void ULeaderboardController::GetTopScores()
 {
 	if (!ValidAppID()) return;
 	//Setup Request
@@ -141,6 +141,92 @@ void ULeaderboardController::GetTopScores()
 	Request->SetHeader("X-Mona-Application-Id", ApplicationID);
 
 	Request->ProcessRequest();
+} */
+
+
+
+void ULeaderboardController::GetTopScores(
+    bool featured, 
+    FString topic, 
+    ELeaderboardPeriod period, 
+    ELeaderboardSortingOrder order, 
+    FString startTime, 
+    FString endTime, 
+    bool includeAllUsersScores)
+{
+    if (!ValidAppID()) return;
+    
+    // Setup Request
+    FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
+    Request->SetVerb("GET");
+    
+    // Bind Response Received Callback
+    Request->OnProcessRequestComplete().BindUObject(this, &ULeaderboardController::TopScoresResponseReceived);
+    
+    // Format API call
+    FString url = FString::Printf(TEXT("https://api.monaverse.com/public/leaderboards/%s/top-scores"), *ApplicationID);
+    
+    TArray<FString> QueryParams;
+    
+    // Append optional parameters
+    if (featured)
+    {
+        QueryParams.Add(FString("featured=true"));
+    }
+    if (!topic.IsEmpty())
+    {
+        QueryParams.Add(FString::Printf(TEXT("topic=%s"), *topic));
+    }
+    switch (period)
+    {
+        case ELeaderboardPeriod::daily:
+            QueryParams.Add(FString("period=daily"));
+            break;
+        case ELeaderboardPeriod::weekly:
+            QueryParams.Add(FString("period=weekly"));
+            break;
+        case ELeaderboardPeriod::monthly:
+            QueryParams.Add(FString("period=monthly"));
+            break;
+        case ELeaderboardPeriod::all_time:
+            QueryParams.Add(FString("period=all_time"));
+            break;
+    }
+    switch (order)
+    {
+        case ELeaderboardSortingOrder::highest:
+            QueryParams.Add(FString("order=highest"));
+            break;
+        case ELeaderboardSortingOrder::lowest:
+            QueryParams.Add(FString("order=lowest"));
+            break;
+    }
+    if (!startTime.IsEmpty())
+    {
+        QueryParams.Add(FString::Printf(TEXT("starttime=%s"), *startTime));
+    }
+    if (!endTime.IsEmpty())
+    {
+        QueryParams.Add(FString::Printf(TEXT("endtime=%s"), *endTime));
+    }
+    if (includeAllUsersScores)
+    {
+        QueryParams.Add(FString("include_all_users_scores=true"));
+    }
+    // Append limit of scores to get
+    QueryParams.Add(FString::Printf(TEXT("limit=%d"), NumTopScoresToGet));
+    
+    // Append query parameters to URL
+    if (!QueryParams.IsEmpty())
+    {
+        url.Append("?");
+        url.Append(FString::Join(QueryParams, TEXT("&")));
+    }
+    
+    Request->SetURL(url);
+    Request->SetHeader("X-Mona-Application-Id", ApplicationID);
+
+    Request->ProcessRequest();
 }
 
 void ULeaderboardController::ClientPostScore_Implementation(const float Score, const FString& Topic, const FString& InSDKSecret)
@@ -322,7 +408,7 @@ void ULeaderboardController::ClientPostScoreResponseReceived(FHttpRequestPtr Req
 		if (Response->GetResponseCode() == 401)
 		{
 			FString ResponseString = Response->GetContentAsString();
-			AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [ResponseString, Response, this]()
+			AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this]()
 			{
 				std::lock_guard Lock(Mutex);
 				UE_LOG(LogTemp, Warning, TEXT("401 Unauthorized - Refreshing Access Token"));

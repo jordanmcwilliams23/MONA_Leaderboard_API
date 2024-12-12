@@ -55,6 +55,22 @@ struct FScores
 	int Count;
 };
 
+UENUM(BlueprintType)
+enum class ELeaderboardPeriod : uint8
+{
+	daily,
+	weekly,
+	monthly,
+	all_time
+};
+
+UENUM(BlueprintType)
+enum class ELeaderboardSortingOrder : uint8
+{
+	highest,
+	lowest
+};
+
 //Delegates for broadcasting top scores, OTP Verified, etc.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTopScoresReceived, const FScores&, TopScores);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnOTPVerified);
@@ -90,8 +106,18 @@ public:
 	void RefreshAccessToken();
 	
 	//Leaderboard
+	/* UFUNCTION(BlueprintCallable, Category= "LeaderboardController")
+	void GetTopScores(); */
+
 	UFUNCTION(BlueprintCallable, Category= "LeaderboardController")
-	void GetTopScores();
+	void GetTopScores(
+	bool featured = false, 
+	FString topic = "", 
+	ELeaderboardPeriod period = ELeaderboardPeriod::all_time, 
+	ELeaderboardSortingOrder order = ELeaderboardSortingOrder::highest, 
+	FString startTime = "", 
+	FString endTime = "", 
+	bool includeAllUsersScores = false);
 	
 	UFUNCTION(BlueprintCallable, Client, Reliable, Category= "LeaderboardController")
 	void ClientPostScore(const float Score, const FString& Topic = "", const FString& InSDKSecret = "");
