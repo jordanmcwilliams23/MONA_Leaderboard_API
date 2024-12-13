@@ -1,7 +1,7 @@
 # MONA_Leaderboard_API
 Unreal Engine 5.3 Source Integration of MONA API for Leaderboard features
 
-The UE5.3 Plugin for ease of use is available at: https://drive.google.com/file/d/1NHUSXGwzLhy7Wm3oRjFo0aePo2RsazCM/view?usp=sharing
+The UE5.3 plugin download for ease of use is available [here](https://drive.google.com/file/d/1SlDsJUizFXcM-EZFbVAKBG6hpSA2IlyH/view?usp=sharing)
 
 # Add to a new project
 1. Download the plugin.
